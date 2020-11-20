@@ -2,6 +2,10 @@ package com.tong.customsearch;
 
 import androidx.collection.SimpleArrayMap;
 
+/**
+ * 自定义拼音转换包
+ * 如果不想用第三方包，可以用这个类，当然这个类的扩展功能会受限，比如多音字之类的问题
+ */
 public class PinyinUtils {
     private PinyinUtils() {
         throw new UnsupportedOperationException("u can't instantiate me...");
