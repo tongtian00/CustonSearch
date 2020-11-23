@@ -3,6 +3,8 @@ package com.tong.customsearch;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
+import android.view.View;
 import android.widget.EditText;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -18,9 +20,13 @@ import net.sourceforge.pinyin4j.format.exception.BadHanyuPinyinOutputFormatCombi
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
+
+    private static final String TAG = "MainActivity";
 
     private RecyclerView recyclerView;
     private SearchAdapter adapter;
@@ -32,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
     private EditText etSearchPinYin;
 
     public static final String[] str = new String[]{
-            "陈天丽","黄正","徐明"
+            "单雄信","王重阳","徐明"
             ,"李自成","林子祥","周星星"
             ,"周润发","林星辰","林青霞"
             ,"李赛凤","刘德华","胡歌"
@@ -50,50 +56,58 @@ public class MainActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.recyclerView);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.setVisibility(View.GONE);
 
         list = new ArrayList<>();
         list.addAll(Arrays.asList(str));
 
-        /**
-         * setToneType 设置音标的显示方式：
-         *
-         * HanyuPinyinToneType.WITH_TONE_MARK：在拼音字母上显示音标，如“zhòng”
-         * HanyuPinyinToneType.WITH_TONE_NUMBER：在拼音字符串后面通过数字显示，如“zhong4”
-         * HanyuPinyinToneType.WITHOUT_TONE：不显示音标
-         * setCaseType 设置拼音大小写：
-         *
-         * HanyuPinyinCaseType.LOWERCASE：返回的拼音为小写字母
-         * HanyuPinyinCaseType.UPPERCASE：返回的拼音为大写字母
-         * setVCharType 设置拼音字母“ü”的显示方式
-         * 汉语拼音中的“ü”不能简单的通过英文来表示，所以需要单独定义“ü”的显示格式
-         *
-         * HanyuPinyinVCharType.WITH_U_UNICODE：默认的显示方式，输出“ü”
-         * HanyuPinyinVCharType.WITH_V：输出“v”
-         * HanyuPinyinVCharType.WITH_U_AND_COLON：输出“u:”
-         */
+        userNameList = new ArrayList<>();
+
         HanyuPinyinOutputFormat format = new HanyuPinyinOutputFormat();
         format.setToneType(HanyuPinyinToneType.WITHOUT_TONE);//不显示音标
         format.setVCharType(HanyuPinyinVCharType.WITH_V);//“ü”输出V
         format.setCaseType(HanyuPinyinCaseType.LOWERCASE);//拼音输出小写
-        userNameList = new ArrayList<>();
-        for (String name : list) {
-            StringBuffer stringBuffer = new StringBuffer();
-            for (int j=0;j<name.length();j++){
-                char c = name.charAt(j);
+        for (final String s : list) {
+            List<String[]> pinYinManagerBeans = new ArrayList<>();
+            for (int i = 0; i < s.length(); i++) {
+                char c = s.charAt(i);
                 String[] cStrHY = new String[0];
                 try {
-                    cStrHY = PinyinHelper.toHanyuPinyinStringArray(c,format);
+                    cStrHY = PinyinHelper.toHanyuPinyinStringArray(c, format);
                 } catch (BadHanyuPinyinOutputFormatCombination badHanyuPinyinOutputFormatCombination) {
                     badHanyuPinyinOutputFormatCombination.printStackTrace();
                 }
-                stringBuffer.append(cStrHY[0]);
+                pinYinManagerBeans.add(cStrHY);
             }
-            UserName userName = new UserName();
-            userName.setPinyin(stringBuffer.toString());
-            userName.setName(name);
-            userNameList.add(userName);
-        }
 
+            List<String> strings = new ArrayList<>();
+            strings.addAll(Arrays.asList(pinYinManagerBeans.get(0)));
+            if (pinYinManagerBeans.size() > 1) {
+                PinYinManager.getPinYinKey(strings, pinYinManagerBeans, 1, new PinYinManager.PinYinCallBack() {
+                    @Override
+                    public void callBack(List<String> pinyins) {
+                        for (String pinyin : pinyins) {
+                            UserName userName = new UserName();
+                            userName.setPinyin(pinyin);
+                            userName.setName(s);
+                            userNameList.add(userName);
+                        }
+                    }
+                });
+            }else {
+                for (String string : strings) {
+                    UserName userName = new UserName();
+                    userName.setPinyin(string);
+                    userName.setName(s);
+                    userNameList.add(userName);
+                }
+            }
+        }
+//        for (UserName userName : userNameList) {
+//            Log.e(TAG, "onCreate: "+userName.toString() );
+//        }
+
+        //搜名字
 //        adapter = new SearchAdapter(this,list);
 //        recyclerView.setAdapter(adapter);
 //        adapter.setOnItemListener(new SearchAdapter.OnItemListener() {
@@ -120,6 +134,8 @@ public class MainActivity extends AppCompatActivity {
 //            }
 //        });
 
+
+        //搜拼音
         searchPinYinAdapter = new SearchPinYinAdapter(this,userNameList);
         recyclerView.setAdapter(searchPinYinAdapter);
         searchPinYinAdapter.setOnItemListener(new SearchPinYinAdapter.OnItemListener() {
@@ -138,6 +154,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 searchPinYinAdapter.getFilter().filter(etSearchPinYin.getText().toString().trim());
+                if (recyclerView.getVisibility()==View.GONE){
+                    recyclerView.setVisibility(View.VISIBLE);
+                }
             }
 
             @Override

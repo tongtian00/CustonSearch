@@ -12,6 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public class SearchPinYinAdapter extends RecyclerView.Adapter<SearchPinYinAdapter.MyViewHolder> implements Filterable {
@@ -111,9 +112,22 @@ public class SearchPinYinAdapter extends RecyclerView.Adapter<SearchPinYinAdapte
         @Override
         protected void publishResults(CharSequence constraint, FilterResults results) {
             list = (List<UserName>) results.values;
+           list = getNewList(list);
             notifyDataSetChanged();
         }
     }
 
+    //去重，获取新集合
+    private List<UserName> getNewList(List<UserName> list){
+        List<UserName> userNameList = new ArrayList<>();
+        List<String> stringList = new ArrayList<>();
+        for (UserName userName : list) {
+            if (!stringList.contains(userName.getName())){
+                stringList.add(userName.getName());
+                userNameList.add(userName);
+            }
+        }
+        return userNameList;
+    }
 
 }
